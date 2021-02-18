@@ -285,7 +285,6 @@ if __name__ == '__main__':
     start_dir = '/Users/yangyuexiong/Desktop/BasicService/BusinessModule'
     discover = unittest.TestLoader().discover(start_dir=start_dir, pattern='test*.py')
     # discover = unittest.defaultTestLoader.discover(start_dir='./BusinessModule', pattern='test*.py')
-    # discover.run(TestResult())
 
     jtr = JsonTestRunner(tester='杨跃雄')
     jtr.run(discover)
