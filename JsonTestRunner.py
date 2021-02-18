@@ -23,7 +23,7 @@ class TemplateMixin:
 
 
 class OutputRedirector:
-    """ Wrapper to redirect stdout or stderr """
+    """重定向标准输出或标准错误"""
 
     def __init__(self, fp):
         self.fp = fp
@@ -60,10 +60,7 @@ class TestResultExtension(TestResult):
         self.result_list = []
 
     def complete_output(self):
-        """
-        Disconnect output redirection and return buffer.
-        Safe to call multiple times.
-        """
+        """断开输出重定向和返回缓冲区,分别独立打印输出"""
         if self.this_stdout:
             sys.stdout = self.this_stdout
             sys.stderr = self.this_stderr
@@ -82,9 +79,6 @@ class TestResultExtension(TestResult):
         sys.stderr = stderr_redirector  # 将 StringIO 的值输出
 
     def stopTest(self, test):
-        # Usually one of addSuccess, addError or addFailure would have been called.
-        # But there are some path in unittest that would bypass this.
-        # We must disconnect stdout in stopTest(), which is guaranteed to be called.
         self.complete_output()
 
     def addSuccess(self, test):
@@ -214,7 +208,7 @@ class JsonTestRunner:
     def run(self, test):
         """
         :test: 测试套件
-        Run the given test case or test suite.
+        运行Unittest的测试用例或测试套件。
         """
         # result = _TestResult(1)
         # result = TestResult()

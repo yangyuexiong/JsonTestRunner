@@ -1,5 +1,7 @@
 # JsonTestRunner
-基于Unittest生成Json格式的测试结果,包含HTML/XML等,用于CICD以及其他需求
+基于Unittest生成Json格式的测试结果,包含HTML/XML等测试报告,用于CICD以及其他需求
+
+ps:感谢 HTMLTestRunner 作者的实现思路
 
 ```python
 class JsonTestRunner:
