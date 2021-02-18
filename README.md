@@ -1,0 +1,2 @@
+# JsonTestRunner
+基于Unittest生成Json生成json格式的测试结果,包含HTML/XML等,用于CICD以及其他需求
