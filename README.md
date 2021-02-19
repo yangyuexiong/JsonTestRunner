@@ -37,7 +37,7 @@ class JsonTestRunner:
 # 例子
 import unittest
 import JsonTestRunner
-start_dir = '/Users/yangyuexiong/Desktop/BasicService/BusinessModule'
+start_dir = '/Users/yangyuexiong/Desktop/JsonTestRunner/case'
 discover = unittest.TestLoader().discover(start_dir=start_dir, pattern='test*.py')
 # discover = unittest.defaultTestLoader.discover(start_dir='./BusinessModule', pattern='test*.py')
 # discover.run(TestResult())
