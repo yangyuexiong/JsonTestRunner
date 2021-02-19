@@ -9,6 +9,7 @@ import io
 import os
 import sys
 import time
+from xml.sax import saxutils
 from datetime import datetime
 
 import unittest
@@ -18,8 +19,272 @@ from unittest import TestResult
 class TemplateMixin:
     """HTML模版"""
 
-    def __init__(self, stream=sys.stdout):
-        self.stream = stream
+    HTML_TMPL = r"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>%(title)s</title>
+        <link
+          rel="stylesheet"
+          href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css"
+        />
+        <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+        <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+        <style>
+          .panel-default > .panel-heading {
+            background: none;
+          }
+          .panel-default > .panel-heading .btn {
+            color: #fff;
+          }
+    
+          .btn-group-wrapper .btn {
+            width: 150px;
+          }
+    
+          #backTop {
+            position: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            right: 30px;
+            bottom: 30px;
+            width: 40px;
+            height: 40px;
+            border-radius: 1000px;
+            box-shadow: 0 0 10px 0 #ccc;
+          }
+        </style>
+      </head>
+    <body>
+    <div class="container-fluid">
+    %(first_one)s
+    %(first_two)s
+    %(table)s
+    </div>
+    
+    %(script)s
+    </body>
+    </html>
+    """
+
+    def __init__(self, test_result):
+        if isinstance(test_result, dict):
+            self.test_result = test_result
+        else:
+            raise TypeError('test_result 应该是一个 dict 类型')
+
+    @classmethod
+    def __generate_first_one(cls, **kwargs):
+        """1"""
+        first_one = """<div class="heading">
+        <h1 style="font-family: Microsoft YaHei">基础服务:自动化测试报告</h1>
+        <p class="attribute">
+            <strong>
+                测试人员:
+            </strong>
+            {tester}
+        </p>
+        <p class="attribute">
+          <strong>
+                开始时间:
+          </strong> 
+            {start_time}
+        </p>
+        <p class="attribute">
+            <strong>
+                合计耗时:
+            </strong>
+                {duration}
+            </p>
+        <p class="attribute">
+          <strong>
+                测试结果:
+          </strong> 
+          共:{all_count}
+          通过:{success_count}
+          失败:{failure_count}
+          通过率:{pass_rate}
+        </p>
+        <p>
+            {description}
+        </p>
+      </div>
+        """.format(
+            tester=kwargs.get('tester', 'tester'),
+            start_time=kwargs.get('start_time', 'start_time'),
+            duration=kwargs.get('duration', 'duration'),
+            all_count=kwargs.get('all_count', 'all_count'),
+            success_count=kwargs.get('success_count', 'success_count'),
+            failure_count=kwargs.get('failure_count', 'failure_count'),
+            pass_rate=kwargs.get('pass_rate', 'pass_rate'),
+            description=kwargs.get('description', 'description'),
+        )
+        return first_one
+
+    @classmethod
+    def __generate_first_two(cls, **kwargs):
+        """2"""
+        first_two = """
+        <div class="btn-group-wrapper">
+            <button type="button" class="btn btn-primary">全部【{all_count}】</button>
+            <button type="button" class="btn btn-success">成功【{success_count}】</button>
+            <button type="button" class="btn btn-danger">失败【{failure_count}】</button>
+        </div>
+        """.format(
+            all_count=kwargs.get('all_count', 'all_count'),
+            success_count=kwargs.get('success_count', 'success_count'),
+            failure_count=kwargs.get('failure_count', 'failure_count')
+        )
+        return first_two
+
+    @classmethod
+    def __generate_table(cls, **kwargs):
+        """生成table"""
+        rows = []
+        result_list = kwargs.get('result_list')
+        result_code = kwargs.get('result_code')
+        pass_rate = kwargs.get('pass_rate')
+        for index, result in enumerate(result_list):
+            tbody = """
+            <tbody>
+                <tr>
+                    <td>
+                    {case_class_doc}
+                    {case_class}
+                    </td>
+                    <td>
+                      <button class="btn btn-info" id="detail">详情</button>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody class="detail hide">
+              <tr>
+                <td>
+                    {case_method_doc}
+                    {case_method_name}
+                </td>
+                <td>
+                  <div class="panel panel-default">
+                    <div class="panel-heading">
+                      <h4 class="panel-title">
+                        <a
+                          class="btn btn-small btn-success"
+                          data-toggle="collapse"
+                          data-parent="#accordion"
+                          href="#{href_case}"
+                        >
+                        {status}
+                        </a>
+                      </h4>
+                    </div>
+                    <div id="{div_case}" class="panel-collapse collapse">
+                      <div class="panel-body">
+                        {output}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            """.format(
+                case_class_doc=result.get('case_class_doc', 'case_class_doc'),
+                case_class=result.get('case_class', 'case_class'),
+                case_method_doc=result.get('case_class', 'case_class'),
+                case_method_name=result.get('case_class', 'case_class'),
+                status='正确' if result_code == 1 else '错误',
+                href_case=index,
+                div_case=index,
+                output=result.get('output', 'output')
+            )
+            rows.append(tbody)
+        table_list = ''.join(rows)
+        thead = """
+        <thead>
+          <tr>
+            <th>用例集/测试用例</th>
+            <th width="50%">详细</th>
+          </tr>
+        </thead>
+        """
+
+        tfoot = """
+        <tfoot>
+          <tr>
+            <td>总计</td>
+            <td>通过率:{pass_rate}</td>
+          </tr>
+        </tfoot>
+        """.format(pass_rate=pass_rate)
+
+        table_root = """
+        <table class="table table-hover">
+            {thead}
+            {table_list}
+            {tfoot}
+        </table>
+        """.format(
+            thead=thead,
+            table_list=table_list,
+            tfoot=tfoot
+        )
+        return table_root
+
+    @classmethod
+    def __generate_script(cls):
+        """4"""
+        script = """
+        <script>
+          $("#detail").on("click", () => {
+            $(".detail").toggleClass("hide");
+          });
+    
+          $("#backTop").on("click", () => {
+            $("html,body").animate(
+              {
+                scrollTop: 0
+              },
+              200
+            );
+          });
+        </script>
+        """
+        return script
+
+    def generate_html_report(self):
+        """生成html报告"""
+        tr = self.test_result
+        title = tr.get('title')
+        description = tr.get('description')
+        tester = tr.get('tester')
+        start_time = tr.get('start_time')
+        stop_time = tr.get('stop_time')
+        duration = tr.get('duration')
+        all_count = tr.get('all_count')
+        success_count = tr.get('success_count')
+        failure_count = tr.get('failure_count')
+        error_count = tr.get('error_count')
+        pass_rate = tr.get('pass_rate')
+        result_list = tr.get('result_list')
+        result_code = tr.get('result_code')
+
+        first_one = self.__generate_first_one(**tr)
+        first_two = self.__generate_first_two(**tr)
+        table = self.__generate_table(**tr)
+        script = self.__generate_script()
+        html = self.HTML_TMPL % dict(
+            title=saxutils.escape(title),
+            first_one=first_one,
+            first_two=first_two,
+            table=table,
+            script=script
+        )
+        return html
 
 
 class OutputRedirector:
@@ -61,6 +326,7 @@ class TestResultExtension(TestResult):
 
     def complete_output(self):
         """断开输出重定向和返回缓冲区,分别独立打印输出"""
+
         if self.this_stdout:
             sys.stdout = self.this_stdout
             sys.stderr = self.this_stderr
@@ -208,7 +474,7 @@ class JsonTestRunner:
     def run(self, test):
         """
         :test: 测试套件
-        运行Unittest的测试用例或测试套件。
+        运行Unittest的测试用例或测试套件
         """
         # result = _TestResult(1)
         # result = TestResult()
@@ -247,41 +513,44 @@ class JsonTestRunner:
         print(self.get_json_report.__doc__)
         return self.test_result
 
-    def get_html_report(self, report_path=os.getcwd(),
-                        report_name='Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))):
+    def get_html_report(self, report_path=os.getcwd(), report_name=None):
         """生成 HTML 报告"""
         print(self.get_html_report.__doc__)
-        print(report_path)
-        print(report_name)
-        p = '{}/{}'.format(report_path, report_name)
-        print(p)
-        # TODO 渲染 HTML
-        # with open(p, 'wb') as f:
-        #     print('f:', f)
-        # f.write()
+        if report_name:
+            report_name = 'create_{}_'.format(time.strftime('%Y-%m-%d_%H:%M:%S')) + report_name
+        else:
+            report_name = 'Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))
+        print('报告名称:{}'.format(report_name))
 
-    def get_xml_report(self, report_path=os.getcwd(),
-                       report_name='Test_Report_{}_.xml'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))):
+        report_path = report_path + '/reports'
+        print('目录路径:{}'.format(report_path))
+
+        final_path = '{}/{}'.format(report_path, report_name)
+        print('绝对路径:{}'.format(final_path))
+
+        self.test_result['title'] = self.title
+        self.test_result['description'] = self.description
+        self.test_result['tester'] = self.tester
+        html_test_report = TemplateMixin(test_result=self.test_result)
+        content = html_test_report.generate_html_report()
+
+        with open(final_path, 'wb') as f:
+            f.write(content.encode('utf8'))
+
+    def get_xml_report(self, report_path=os.getcwd(), report_name=None):
         """生成 XML 报告"""
         print(self.get_xml_report.__doc__)
-        print(report_path)
-        print(report_name)
-        p = '{}/{}'.format(report_path, report_name)
-        print(p)
         # TODO 渲染 XML
-        # with open(p, 'wb') as f:
-        #     print('f:', f)
-        # f.write()
 
 
 if __name__ == '__main__':
     # 例子
-    start_dir = '/Users/yangyuexiong/Desktop/BasicService/BusinessModule'
-    discover = unittest.TestLoader().discover(start_dir=start_dir, pattern='test*.py')
-    # discover = unittest.defaultTestLoader.discover(start_dir='./BusinessModule', pattern='test*.py')
+    start_dir = os.getcwd() + '/case'  # 使用时修改路径
+    discover = unittest.defaultTestLoader.discover(start_dir=start_dir, pattern='test*.py')
+    # discover.run(TestResult())
 
     jtr = JsonTestRunner(tester='杨跃雄')
     jtr.run(discover)
     print(jtr.get_json_report())
-    # jsr.get_html_report()
-    # jsr.get_xml_report()
+    jtr.get_html_report()
+    # jtr.get_xml_report()
