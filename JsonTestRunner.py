@@ -8,6 +8,7 @@
 import io
 import os
 import sys
+import json
 import time
 from xml.sax import saxutils
 from datetime import datetime
@@ -45,7 +46,7 @@ class TemplateMixin:
           .btn-group-wrapper .btn {
             width: 150px;
           }
-    
+          
           #backTop {
             position: fixed;
             display: flex;
@@ -58,6 +59,17 @@ class TemplateMixin:
             height: 40px;
             border-radius: 1000px;
             box-shadow: 0 0 10px 0 #ccc;
+          }
+          .btn-info,
+          .btn-info:hover,
+          .btn-info:focus,
+          .btn-info:active {
+            background-color: #337ab7;
+            border-color: #337ab7;
+          }
+
+          .panel-body {
+            white-space: pre-line;
           }
         </style>
       </head>
@@ -81,9 +93,9 @@ class TemplateMixin:
 
     @classmethod
     def __generate_first_one(cls, **kwargs):
-        """1"""
+        """heading"""
         first_one = """<div class="heading">
-        <h1 style="font-family: Microsoft YaHei">基础服务:自动化测试报告</h1>
+        <h1 style="font-family: Microsoft YaHei">{title}</h1>
         <p class="attribute">
             <strong>
                 测试人员:
@@ -116,6 +128,7 @@ class TemplateMixin:
         </p>
       </div>
         """.format(
+            title=kwargs.get('title', 'title'),
             tester=kwargs.get('tester', 'tester'),
             start_time=kwargs.get('start_time', 'start_time'),
             duration=kwargs.get('duration', 'duration'),
@@ -129,7 +142,7 @@ class TemplateMixin:
 
     @classmethod
     def __generate_first_two(cls, **kwargs):
-        """2"""
+        """操作按钮"""
         first_two = """
         <div class="btn-group-wrapper">
             <button type="button" class="btn btn-primary">全部【{all_count}】</button>
@@ -148,9 +161,9 @@ class TemplateMixin:
         """生成table"""
         rows = []
         result_list = kwargs.get('result_list')
-        result_code = kwargs.get('result_code')
         pass_rate = kwargs.get('pass_rate')
         for index, result in enumerate(result_list):
+            result_code = result.get('result_code')
             tbody = """
             <tbody>
                 <tr>
@@ -159,11 +172,11 @@ class TemplateMixin:
                     {case_class}
                     </td>
                     <td>
-                      <button class="btn btn-info" id="detail">详情</button>
+                      <button class="btn btn-{status_btn} detail-btn">{status}</button>
                     </td>
                 </tr>
             </tbody>
-            <tbody class="detail hide">
+            <tbody class="detail hide {status_btn}">
               <tr>
                 <td>
                     {case_method_doc}
@@ -174,12 +187,12 @@ class TemplateMixin:
                     <div class="panel-heading">
                       <h4 class="panel-title">
                         <a
-                          class="btn btn-small btn-success"
+                          class="btn btn-small btn-info"
                           data-toggle="collapse"
                           data-parent="#accordion"
                           href="#{href_case}"
                         >
-                        {status}
+                        详情
                         </a>
                       </h4>
                     </div>
@@ -197,7 +210,8 @@ class TemplateMixin:
                 case_class=result.get('case_class', 'case_class'),
                 case_method_doc=result.get('case_class', 'case_class'),
                 case_method_name=result.get('case_class', 'case_class'),
-                status='正确' if result_code == 1 else '错误',
+                status='正确' if result_code == 0 else '错误',
+                status_btn='success' if result_code == 0 else 'danger',
                 href_case=index,
                 div_case=index,
                 output=result.get('output', 'output')
@@ -237,11 +251,25 @@ class TemplateMixin:
 
     @classmethod
     def __generate_script(cls):
-        """4"""
+        """script"""
         script = """
         <script>
-          $("#detail").on("click", () => {
-            $(".detail").toggleClass("hide");
+          $(".detail-btn").on("click", function () {
+            $(this).parents("tbody").next().toggleClass("hide");
+          });
+    
+          $(".btn-group-wrapper .btn-primary").on("click", function () {
+            $(".table tbody").removeClass("hide");
+          });
+    
+          $(".btn-group-wrapper .btn-success").on("click", function () {
+            $(".table .btn").parents("tbody").addClass("hide");
+            $(".table .btn-success").parents("tbody").removeClass("hide");
+          });
+    
+          $(".btn-group-wrapper .btn-danger").on("click", function () {
+            $(".table .btn").parents("tbody").addClass("hide");
+            $(".table .btn-danger").parents("tbody").removeClass("hide");
           });
     
           $("#backTop").on("click", () => {
@@ -322,7 +350,59 @@ class TestResultExtension(TestResult):
         self.success_count = 0
         self.failure_count = 0
         self.error_count = 0
+
+        self.module_dict = {}
         self.result_list = []
+
+    def assemble_result_obj(self, test, result_code, output):
+        """
+        demo = {
+            'module': {
+                'cls': {
+                    'def_list': [
+                        {
+                            'result_code': '',
+                            'case_method_name': '',
+                            'case_method_doc': '',
+                            'output': ''
+                        }
+                    ]
+                }
+            }
+        }
+        """
+
+        cls_module = test.__module__
+        cls_name = test.__class__.__name__
+        case_method_name = test._testMethodName
+        case_method_doc = test._testMethodDoc
+        case_dict = {
+            'result_code': result_code,
+            'case_method_name': case_method_name,
+            'case_method_doc': case_method_doc,
+            'output': '\n' + output
+        }
+
+        def __func():
+            if self.module_dict.get(cls_module).get(cls_name):
+                if self.module_dict.get(cls_module).get(cls_name).get('def_list'):
+                    self.module_dict[cls_module][cls_name]['def_list'].append(case_dict)
+                else:
+                    self.module_dict[cls_module][cls_name]['def_list'] = []
+
+            else:
+                self.module_dict[cls_module][cls_name] = {}
+                self.module_dict[cls_module][cls_name]['def_list'] = []
+                self.module_dict[cls_module][cls_name]['def_list'].append(case_dict)
+
+        if self.module_dict.get(cls_module):
+            __func()
+        else:
+            self.module_dict[cls_module] = {
+                'case_class': test.__module__,
+                'case_class_doc': test.__doc__,
+            }  # 创建module对象
+            __func()
 
     def complete_output(self):
         """断开输出重定向和返回缓冲区,分别独立打印输出"""
@@ -351,16 +431,8 @@ class TestResultExtension(TestResult):
         self.success_count += 1
         super().addSuccess(test)
         output = self.complete_output()
-        case_obj = {
-            'result_code': 0,
-            'test': test,
-            'case_class': test.__module__,
-            'case_class_doc': test.__doc__,
-            'case_method_name': test._testMethodName,
-            'case_method_doc': test._testMethodDoc,
-            'output': '\n' + output
-        }
-        self.result_list.append(case_obj)
+
+        self.assemble_result_obj(test, 0, output)
         if self.verbosity > 1:
             sys.stderr.write('ok ')
             sys.stderr.write(str(test))
@@ -373,17 +445,8 @@ class TestResultExtension(TestResult):
         TestResult.addFailure(self, test, err)
         _, _exc_str = self.failures[-1]
         output = self.complete_output()
-        case_obj = {
-            'result_code': 1,
-            'test': test,
-            'case_class': test.__module__,
-            'case_class_doc': test.__doc__,
-            'case_method_name': test._testMethodName,
-            'case_method_doc': test._testMethodDoc,
-            'output': output,
-            'except_str': _exc_str
-        }
-        self.result_list.append(case_obj)
+
+        self.assemble_result_obj(test, 1, output)
         if self.verbosity > 1:
             sys.stderr.write('F  ')
             sys.stderr.write(str(test))
@@ -396,17 +459,8 @@ class TestResultExtension(TestResult):
         TestResult.addError(self, test, err)
         _, _exc_str = self.errors[-1]
         output = self.complete_output()
-        case_obj = {
-            'result_code': 2,
-            'test': test,
-            'case_class': test.__module__,
-            'case_class_doc': test.__doc__,
-            'case_method_name': test._testMethodName,
-            'case_method_doc': test._testMethodDoc,
-            'output': output,
-            'except_str': _exc_str
-        }
-        self.result_list.append(case_obj)
+
+        self.assemble_result_obj(test, 2, output)
         if self.verbosity > 1:
             sys.stderr.write('E  ')
             sys.stderr.write(str(test))
@@ -492,7 +546,8 @@ class JsonTestRunner:
         failure_count = result.failure_count
         error_count = result.error_count
         all_count = success_count + failure_count + error_count
-        result_list = result.result_list
+        # result_list = result.result_list
+        result_list = result.module_dict
         pass_rate = str("%.2f%%" % (float(success_count) / float(all_count) * 100))
 
         test_result = {
@@ -522,7 +577,7 @@ class JsonTestRunner:
             report_name = 'Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))
         print('报告名称:{}'.format(report_name))
 
-        report_path = report_path + '/reports'
+        report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
         print('目录路径:{}'.format(report_path))
 
         final_path = '{}/{}'.format(report_path, report_name)
@@ -545,12 +600,14 @@ class JsonTestRunner:
 
 if __name__ == '__main__':
     # 例子
-    start_dir = os.getcwd() + '/case'  # 使用时修改路径
+    start_dir = '/Users/yangyuexiong/Desktop/BasicService/BusinessModule/TradingArea/case/Refund'
     discover = unittest.defaultTestLoader.discover(start_dir=start_dir, pattern='test*.py')
     # discover.run(TestResult())
 
     jtr = JsonTestRunner(tester='杨跃雄')
     jtr.run(discover)
     print(jtr.get_json_report())
-    jtr.get_html_report()
+    print(json.dumps(jtr.get_json_report().get('result_list'), sort_keys=True, indent=4, separators=(', ', ': '),
+                     ensure_ascii=False))
+    # jtr.get_html_report()
     # jtr.get_xml_report()
