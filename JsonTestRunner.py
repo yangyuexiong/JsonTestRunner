@@ -600,7 +600,7 @@ class JsonTestRunner:
 
 if __name__ == '__main__':
     # 例子
-    start_dir = '/Users/yangyuexiong/Desktop/BasicService/BusinessModule/TradingArea/case/Refund'
+    start_dir = '../JsonTestRunner/case'
     discover = unittest.defaultTestLoader.discover(start_dir=start_dir, pattern='test*.py')
     # discover.run(TestResult())
 
@@ -609,5 +609,5 @@ if __name__ == '__main__':
     print(jtr.get_json_report())
     print(json.dumps(jtr.get_json_report().get('result_list'), sort_keys=True, indent=4, separators=(', ', ': '),
                      ensure_ascii=False))
-    # jtr.get_html_report()
+    jtr.get_html_report()
     # jtr.get_xml_report()
