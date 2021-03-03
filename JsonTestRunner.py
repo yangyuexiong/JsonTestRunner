@@ -485,13 +485,10 @@ class JsonTestRunner:
         jtr.run(discover)
         jtr.get_json_report()
 
-    html(查看文件目录即可):
-        jtr.run(discover)
-        jtr.get_html_report()
-
-    xml(查看文件目录即可):
-        jtr.run(discover)
-        jtr.get_xml_report()
+    报告生成:
+        jtr.generate_report('html')
+        jtr.generate_report('xml')
+        jtr.generate_report('excel')
 
     """
     default_title = '测试报告'
@@ -568,20 +565,20 @@ class JsonTestRunner:
         print(self.get_json_report.__doc__)
         return self.test_result
 
-    def get_html_report(self, report_path=os.getcwd(), report_name=None):
+    def __generate_html_report(self, report_path=None):
         """生成 HTML 报告"""
-        print(self.get_html_report.__doc__)
-        if report_name:
-            report_name = 'create_{}_'.format(time.strftime('%Y-%m-%d_%H:%M:%S')) + report_name
-        else:
-            report_name = 'Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))
-        print('报告名称:{}'.format(report_name))
-
-        report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
-        print('目录路径:{}'.format(report_path))
-
-        final_path = '{}/{}'.format(report_path, report_name)
-        print('绝对路径:{}'.format(final_path))
+        print(self.__generate_html_report.__doc__)
+        # if report_name:
+        #     report_name = 'create_{}_'.format(time.strftime('%Y-%m-%d_%H:%M:%S')) + report_name
+        # else:
+        #     report_name = 'Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))
+        # print('报告名称:{}'.format(report_name))
+        #
+        # report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
+        # print('目录路径:{}'.format(report_path))
+        #
+        # final_path = '{}/{}'.format(report_path, report_name)
+        # print('绝对路径:{}'.format(final_path))
 
         self.test_result['title'] = self.title
         self.test_result['description'] = self.description
@@ -589,13 +586,63 @@ class JsonTestRunner:
         html_test_report = TemplateMixin(test_result=self.test_result)
         content = html_test_report.generate_html_report()
 
-        with open(final_path, 'wb') as f:
+        with open(report_path, 'wb') as f:
             f.write(content.encode('utf8'))
 
-    def get_xml_report(self, report_path=os.getcwd(), report_name=None):
+    def __generate_xml_report(self, report_path=None):
         """生成 XML 报告"""
-        print(self.get_xml_report.__doc__)
+        print(self.__generate_xml_report.__doc__)
         # TODO 渲染 XML
+
+    def __generate_excel_report(self, report_path=None):
+        """生成 Excel 报告"""
+        print(self.__generate_excel_report.__doc__)
+        # TODO 渲染 Excel
+
+    def generate_report(self, report_type=None, report_name=None):
+        """
+        生成报告
+        :report_type:可选(html,xml,excel)
+        :report_name:报告名称
+        """
+        report_path = os.getcwd()
+        ts = time.strftime('%Y-%m-%d_%H:%M:%S')
+        html_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.html'.format(ts)
+        xml_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xml'.format(ts)
+        excel_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xlsx'.format(ts)
+        report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
+
+        report_type_dict = {
+            "html": {
+                "report_name": html_report_name,
+                "report_path": report_path,
+                "func": self.__generate_html_report
+            },
+            "xml": {
+                "report_name": xml_report_name,
+                "report_path": report_path,
+                "func": self.__generate_xml_report
+            },
+            "excel": {
+                "report_name": excel_report_name,
+                "report_path": report_path,
+                "func": self.__generate_excel_report
+            }
+        }
+        if report_type in list(report_type_dict.keys()) and isinstance(report_type, str):
+            rt = report_type_dict.get(report_type.lower())
+        else:
+            rt = report_type_dict.get('html')
+
+        rp = rt.get('report_path')
+        rn = rt.get('report_name')
+        final_path = '{}/{}'.format(rp, rn)
+        print('报告名称:{}'.format(rt.get('report_name')))
+        print('目录路径:{}'.format(rt.get('report_path')))
+        print('绝对路径:{}'.format(final_path))
+
+        generate_report_func = rt.get('func')
+        generate_report_func(report_path=final_path)
 
 
 if __name__ == '__main__':
@@ -607,7 +654,10 @@ if __name__ == '__main__':
     jtr = JsonTestRunner(tester='杨跃雄')
     jtr.run(discover)
     print(jtr.get_json_report())
-    print(json.dumps(jtr.get_json_report().get('result_list'), sort_keys=True, indent=4, separators=(', ', ': '),
-                     ensure_ascii=False))
-    jtr.get_html_report()
-    # jtr.get_xml_report()
+
+    result_list = jtr.get_json_report().get('result_list')
+    print(json.dumps(result_list, sort_keys=True, indent=4, separators=(', ', ': '), ensure_ascii=False))
+
+    jtr.generate_report('html')
+    jtr.generate_report('xml')
+    jtr.generate_report('excel')
