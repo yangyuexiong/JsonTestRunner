@@ -7,7 +7,7 @@ ps:感谢 HTMLTestRunner 作者的实现思路
 class JsonTestRunner:
     """
     接收一个unittest测试套件,生成json格式的测试结果,包含HTML,XML的测试报告
-
+    
     例子:
         # 测试套件集合
         discover = unittest.defaultTestLoader.discover('./test_path', pattern='test*.py')
@@ -20,13 +20,10 @@ class JsonTestRunner:
         jtr.run(discover)
         jtr.get_json_report()
 
-    html(查看文件目录即可):
-        jtr.run(discover)
-        jtr.get_html_report()
-
-    xml(查看文件目录即可):
-        jtr.run(discover)
-        jtr.get_xml_report()
+    报告生成:
+        jtr.generate_report('html')
+        jtr.generate_report('xml')
+        jtr.generate_report('excel')
 
     """
     pass
@@ -37,14 +34,15 @@ class JsonTestRunner:
 # 例子
 import unittest
 import JsonTestRunner
-start_dir = '/Users/yangyuexiong/Desktop/JsonTestRunner/case'
-discover = unittest.TestLoader().discover(start_dir=start_dir, pattern='test*.py')
-# discover = unittest.defaultTestLoader.discover(start_dir='./BusinessModule', pattern='test*.py')
-# discover.run(TestResult())
+
+start_dir = '../JsonTestRunner/case'
+discover = unittest.defaultTestLoader.discover(start_dir=start_dir, pattern='test*.py')
 
 jtr = JsonTestRunner(tester='杨跃雄')
 jtr.run(discover)
+
 print(jtr.get_json_report())
-# jsr.get_html_report()
-# jsr.get_xml_report()
+jtr.generate_report('html')
+# jtr.generate_report('xml')
+# jtr.generate_report('excel')
 ```
