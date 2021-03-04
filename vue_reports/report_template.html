@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- import CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/element-ui@2.15.1/lib/theme-chalk/index.css"
+    />
+
+    <style>
+      table table thead {
+        display: none;
+      }
+
+      .el-table__expanded-cell[class*="cell"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      .card {
+        margin: 30px;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <el-backtop :bottom="10" :visibility-height="10"></el-backtop>
+      <div>
+        <h1>基础服务:自动化测试报告 {{title}}</h1>
+        <h3>测试人员 : {{tester}}</h3>
+        <p>开始时间 : {{start_time}}</p>
+        <p>合计耗时 : {{duration}}</p>
+        <p>
+          测试结果 : 共 {{all_count}}，通过 {{success_count}}，通过率
+          {{pass_rate}}
+        </p>
+        <p>{{description}}</p>
+      </div>
+
+      <el-tabs type="border-card">
+        <el-tab-pane :label="`所有(${all_count})`">
+          <el-table
+            :data="case_all_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card">                              
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane :label="`成功(${success_count})`"
+          ><el-table
+            :data="case_success_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card"></el-card>
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column> </el-table
+        ></el-tab-pane>
+        <el-tab-pane :label="`失败(${fail_count})`"
+          ><el-table
+            :data="case_fail_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card">
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column> </el-table
+        ></el-tab-pane>
+      </el-tabs>
+    </div>
+  </body>
+  <!-- import Vue before Element -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+  <!-- import JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.1/lib/index.js"></script>
+  <script>
+    var case_all_list = [
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }, 
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }
+];
+    var case_success_list = [
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }, 
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }
+];
+    var case_fail_list = [
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }, 
+    {
+        "class_list": [
+            {
+                "class_doc": "TestDem003", 
+                "class_name": "TestDem003", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem003) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }, 
+            {
+                "class_doc": "TestDem004", 
+                "class_name": "TestDem004", 
+                "def_list": [
+                    {
+                        "case_method_doc": "demo_2_001", 
+                        "case_method_name": "test_001", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            "demo_2_001...", 
+                            ">>> End Test", 
+                            ">>> test_001 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 0
+                    }, 
+                    {
+                        "case_method_doc": "demo_2_002", 
+                        "case_method_name": "test_002", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            "demo_2_002...", 
+                            ">>> End Test", 
+                            ">>> test_002 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 1
+                    }, 
+                    {
+                        "case_method_doc": "demo_3_003", 
+                        "case_method_name": "test_003", 
+                        "output": [
+                            "Start Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            "demo_3_003...", 
+                            ">>> End Test", 
+                            ">>> test_003 (test_d2.TestDem004) ", 
+                            ""
+                        ], 
+                        "result_code": 2
+                    }
+                ]
+            }
+        ], 
+        "module": "test_d2"
+    }
+];
+    new Vue({
+      el: "#app",
+      data: function () {
+        return {
+          title: "xxx测试报告",
+          tester: "yyx",
+          description:"【请下载附件,查看报告明细。】",
+          start_time: "2020-04-17 14:17:33",
+          pass_rate: "60.5%",
+          duration: "0:06:36.007642",
+          all_count: "100",
+          success_count: "50",
+          fail_count: "50",
+          case_all_list,
+          case_success_list,
+          case_fail_list,
+        };
+      },
+      methods: {},
+    });
+  </script>
+</html>
