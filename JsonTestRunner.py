@@ -20,70 +20,158 @@ from unittest import TestResult
 class TemplateMixin:
     """HTML模版"""
 
-    HTML_TMPL = r"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>%(title)s</title>
-        <link
-          rel="stylesheet"
-          href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css"
-        />
-        <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
-        <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    
-        <style>
-          .panel-default > .panel-heading {
-            background: none;
-          }
-          .panel-default > .panel-heading .btn {
-            color: #fff;
-          }
-    
-          .btn-group-wrapper .btn {
-            width: 150px;
-          }
-          
-          #backTop {
-            position: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 16px;
-            right: 30px;
-            bottom: 30px;
-            width: 40px;
-            height: 40px;
-            border-radius: 1000px;
-            box-shadow: 0 0 10px 0 #ccc;
-          }
-          .btn-info,
-          .btn-info:hover,
-          .btn-info:focus,
-          .btn-info:active {
-            background-color: #337ab7;
-            border-color: #337ab7;
-          }
+    HTML_VUE_TMPL = r"""<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- import CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/element-ui@2.15.1/lib/theme-chalk/index.css"
+    />
 
-          .panel-body {
-            white-space: pre-line;
-          }
-        </style>
-      </head>
-    <body>
-    <div class="container-fluid">
-    %(first_one)s
-    %(first_two)s
-    %(table)s
+    <style>
+      table table thead {
+        display: none;
+      }
+
+      .el-table__expanded-cell[class*="cell"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      .card {
+        margin: 30px;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <el-backtop :bottom="10" :visibility-height="10"></el-backtop>
+      <div>
+        <h1>基础服务:自动化测试报告 {{title}}</h1>
+        <h3>测试人员 : {{tester}}</h3>
+        <p>开始时间 : {{start_time}}</p>
+        <p>合计耗时 : {{duration}}</p>
+        <p>
+          测试结果 : 共 {{all_count}}，通过 {{success_count}}，通过率
+          {{pass_rate}}
+        </p>
+        <p>{{description}}</p>
+      </div>
+
+      <el-tabs type="border-card">
+        <el-tab-pane :label="`所有(${all_count})`">
+          <el-table
+            :data="case_all_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card">                              
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane :label="`成功(${success_count})`"
+          ><el-table
+            :data="case_success_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card"></el-card>
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column> </el-table
+        ></el-tab-pane>
+        <el-tab-pane :label="`失败(${fail_count})`"
+          ><el-table
+            :data="case_fail_list"
+            style="width: 100%; margin-bottom: 20px"
+            border
+            row-key="id"
+          >
+            <el-table-column type="expand">
+              <template slot-scope="{row}">
+                <el-table border :data="row.class_list" show-header="false">
+                  <el-table-column type="expand">
+                    <template slot-scope="{row}">
+                      <el-table border :data="row.def_list" show-header="false">
+                        <el-table-column type="expand">
+                          <template slot-scope="{row}">
+                            <el-card shadow="always" class="card">
+                              <p v-for="i in row.output">{{i}}</p>
+                            </el-card>
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="case_method_name"
+                        ></el-table-column>
+                      </el-table>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="class_name"></el-table-column>
+                </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="module" label="用例集/测试用例">
+            </el-table-column> </el-table
+        ></el-tab-pane>
+      </el-tabs>
     </div>
-    
-    %(script)s
-    </body>
-    </html>
-    """
+  </body>
+  <!-- import Vue before Element -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+  <!-- import JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.1/lib/index.js"></script>
+
+"""
 
     def __init__(self, test_result):
         if isinstance(test_result, dict):
@@ -92,201 +180,92 @@ class TemplateMixin:
             raise TypeError('test_result 应该是一个 dict 类型')
 
     @classmethod
-    def __generate_first_one(cls, **kwargs):
-        """heading"""
-        first_one = """<div class="heading">
-        <h1 style="font-family: Microsoft YaHei">{title}</h1>
-        <p class="attribute">
-            <strong>
-                测试人员:
-            </strong>
-            {tester}
-        </p>
-        <p class="attribute">
-          <strong>
-                开始时间:
-          </strong> 
-            {start_time}
-        </p>
-        <p class="attribute">
-            <strong>
-                合计耗时:
-            </strong>
-                {duration}
-            </p>
-        <p class="attribute">
-          <strong>
-                测试结果:
-          </strong> 
-          共:{all_count}
-          通过:{success_count}
-          失败:{failure_count}
-          通过率:{pass_rate}
-        </p>
-        <p>
-            {description}
-        </p>
-      </div>
-        """.format(
-            title=kwargs.get('title', 'title'),
-            tester=kwargs.get('tester', 'tester'),
-            start_time=kwargs.get('start_time', 'start_time'),
-            duration=kwargs.get('duration', 'duration'),
-            all_count=kwargs.get('all_count', 'all_count'),
-            success_count=kwargs.get('success_count', 'success_count'),
-            failure_count=kwargs.get('failure_count', 'failure_count'),
-            pass_rate=kwargs.get('pass_rate', 'pass_rate'),
-            description=kwargs.get('description', 'description'),
-        )
-        return first_one
-
-    @classmethod
-    def __generate_first_two(cls, **kwargs):
-        """操作按钮"""
-        first_two = """
-        <div class="btn-group-wrapper">
-            <button type="button" class="btn btn-primary">全部【{all_count}】</button>
-            <button type="button" class="btn btn-success">成功【{success_count}】</button>
-            <button type="button" class="btn btn-danger">失败【{failure_count}】</button>
-        </div>
-        """.format(
-            all_count=kwargs.get('all_count', 'all_count'),
-            success_count=kwargs.get('success_count', 'success_count'),
-            failure_count=kwargs.get('failure_count', 'failure_count')
-        )
-        return first_two
-
-    @classmethod
-    def __generate_table(cls, **kwargs):
-        """生成table"""
-        rows = []
-        result_list = kwargs.get('result_list')
-        pass_rate = kwargs.get('pass_rate')
-        for index, result in enumerate(result_list):
-            result_code = result.get('result_code')
-            tbody = """
-            <tbody>
-                <tr>
-                    <td>
-                    {case_class_doc}
-                    {case_class}
-                    </td>
-                    <td>
-                      <button class="btn btn-{status_btn} detail-btn">{status}</button>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody class="detail hide {status_btn}">
-              <tr>
-                <td>
-                    {case_method_doc}
-                    {case_method_name}
-                </td>
-                <td>
-                  <div class="panel panel-default">
-                    <div class="panel-heading">
-                      <h4 class="panel-title">
-                        <a
-                          class="btn btn-small btn-info"
-                          data-toggle="collapse"
-                          data-parent="#accordion"
-                          href="#{href_case}"
-                        >
-                        详情
-                        </a>
-                      </h4>
-                    </div>
-                    <div id="{div_case}" class="panel-collapse collapse">
-                      <div class="panel-body">
-                        {output}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-            """.format(
-                case_class_doc=result.get('case_class_doc', 'case_class_doc'),
-                case_class=result.get('case_class', 'case_class'),
-                case_method_doc=result.get('case_class', 'case_class'),
-                case_method_name=result.get('case_class', 'case_class'),
-                status='正确' if result_code == 0 else '错误',
-                status_btn='success' if result_code == 0 else 'danger',
-                href_case=index,
-                div_case=index,
-                output=result.get('output', 'output')
-            )
-            rows.append(tbody)
-        table_list = ''.join(rows)
-        thead = """
-        <thead>
-          <tr>
-            <th>用例集/测试用例</th>
-            <th width="50%">详细</th>
-          </tr>
-        </thead>
-        """
-
-        tfoot = """
-        <tfoot>
-          <tr>
-            <td>总计</td>
-            <td>通过率:{pass_rate}</td>
-          </tr>
-        </tfoot>
-        """.format(pass_rate=pass_rate)
-
-        table_root = """
-        <table class="table table-hover">
-            {thead}
-            {table_list}
-            {tfoot}
-        </table>
-        """.format(
-            thead=thead,
-            table_list=table_list,
-            tfoot=tfoot
-        )
-        return table_root
-
-    @classmethod
-    def __generate_script(cls):
+    def __generate_script(cls, **kwargs):
         """script"""
-        script = """
-        <script>
-          $(".detail-btn").on("click", function () {
-            $(this).parents("tbody").next().toggleClass("hide");
-          });
-    
-          $(".btn-group-wrapper .btn-primary").on("click", function () {
-            $(".table tbody").removeClass("hide");
-          });
-    
-          $(".btn-group-wrapper .btn-success").on("click", function () {
-            $(".table .btn").parents("tbody").addClass("hide");
-            $(".table .btn-success").parents("tbody").removeClass("hide");
-          });
-    
-          $(".btn-group-wrapper .btn-danger").on("click", function () {
-            $(".table .btn").parents("tbody").addClass("hide");
-            $(".table .btn-danger").parents("tbody").removeClass("hide");
-          });
-    
-          $("#backTop").on("click", () => {
-            $("html,body").animate(
-              {
-                scrollTop: 0
-              },
-              200
-            );
-          });
-        </script>
+
+        # demo
         """
+        new Vue({
+          el: "#app",
+          data: function () {
+            return {
+              title: "title",
+              tester: "yyx",
+              description:"【请下载附件,查看报告明细。】",
+              start_time: "2020-04-17 14:17:33",
+              pass_rate: "60.5%",
+              duration: "0:06:36.007642",
+              all_count: "100",
+              success_count: "50",
+              fail_count: "50",
+              case_all_list,
+              case_success_list,
+              case_fail_list,
+            };
+          },
+            methods: {},
+        });
+        """
+
+        data = """
+              title: "{title}",
+              tester: "{tester}",
+              description: "{description}",
+              start_time: "{start_time}",
+              pass_rate: "{pass_rate}",
+              duration: "{duration}",
+              all_count: "{all_count}",
+              success_count: "{success_count}",
+              fail_count: "{fail_count}",
+              case_all_list,
+              case_success_list,
+              case_fail_list,
+        """.format(
+            title=kwargs.get('title'),
+            tester=kwargs.get('tester'),
+            description=kwargs.get('description'),
+            start_time=kwargs.get('start_time'),
+            pass_rate=kwargs.get('pass_rate'),
+            duration=kwargs.get('duration'),
+            all_count=kwargs.get('all_count'),
+            success_count=kwargs.get('success_count'),
+            fail_count=kwargs.get('failure_count'),
+        )
+
+        script = r"""
+        <script>
+        var case_all_list = {};
+        var case_success_list = {};
+        var case_fail_list = {};
+        
+        {}
+          {}
+          {}
+            {}
+              {}
+            {}
+          {}
+        {}
+        </script>  
+        """.format(
+            kwargs.get('result_list'),
+            kwargs.get('result_list'),
+            kwargs.get('result_list'),
+            "new Vue({",
+            """el: "#app",""",
+            """data: function () {""",
+            """return {""",
+            data,
+            """};""",
+            """},""",
+            """});""",
+        )
         return script
 
     def generate_html_report(self):
         """生成html报告"""
         tr = self.test_result
+        print(tr)
         title = tr.get('title')
         description = tr.get('description')
         tester = tr.get('tester')
@@ -301,18 +280,10 @@ class TemplateMixin:
         result_list = tr.get('result_list')
         result_code = tr.get('result_code')
 
-        first_one = self.__generate_first_one(**tr)
-        first_two = self.__generate_first_two(**tr)
-        table = self.__generate_table(**tr)
-        script = self.__generate_script()
-        html = self.HTML_TMPL % dict(
-            title=saxutils.escape(title),
-            first_one=first_one,
-            first_two=first_two,
-            table=table,
-            script=script
-        )
-        return html
+        script = self.__generate_script(**tr)
+        html_vue = self.HTML_VUE_TMPL + '\n' + script + '\n' + "</html>"
+
+        return html_vue
 
 
 class OutputRedirector:
@@ -352,26 +323,30 @@ class TestResultExtension(TestResult):
         self.error_count = 0
 
         self.module_dict = {}
+        self.module_over_dict = {}
+        self.class_over_dict = {}
         self.result_list = []
 
     def assemble_result_obj(self, test, result_code, output):
         """
-        demo = {
-            'module': {
-                'cls': {
-                    'def_list': [
-                        {
-                            'result_code': '',
-                            'case_method_name': '',
-                            'case_method_doc': '',
-                            'output': ''
-                        }
-                    ]
-                }
-            }
+        {
+                "module": "文件名称1",
+                "class_list": [
+                    {
+                        "class_name": "类名称",
+                        "class_doc": "类doc",
+                        "def_list": [
+                            {
+                                "result_code": "",
+                                'case_method_name': "",
+                                'case_method_doc': "",
+                                'output':[]
+                            }
+                        ]
+                    }
+                ]
         }
         """
-
         cls_module = test.__module__
         cls_name = test.__class__.__name__
         case_method_name = test._testMethodName
@@ -380,29 +355,42 @@ class TestResultExtension(TestResult):
             'result_code': result_code,
             'case_method_name': case_method_name,
             'case_method_doc': case_method_doc,
-            'output': '\n' + output
+            'output': output
         }
 
         def __func():
-            if self.module_dict.get(cls_module).get(cls_name):
-                if self.module_dict.get(cls_module).get(cls_name).get('def_list'):
-                    self.module_dict[cls_module][cls_name]['def_list'].append(case_dict)
+            """组装"""
+            if self.module_over_dict.get('module') == cls_module:
+                if self.class_over_dict.get('class_name') == cls_name:
+                    self.class_over_dict['def_list'].append(case_dict)
                 else:
-                    self.module_dict[cls_module][cls_name]['def_list'] = []
+                    self.class_over_dict = {}  # 清空
+
+                    """创建:class 组装:def_list"""
+                    self.class_over_dict['class_name'] = cls_name
+                    self.class_over_dict['class_doc'] = cls_name
+                    self.class_over_dict['def_list'] = []
+                    self.class_over_dict['def_list'].append(case_dict)
+
+                    """组装:class_list"""
+                    self.module_over_dict['class_list'].append(self.class_over_dict)
 
             else:
-                self.module_dict[cls_module][cls_name] = {}
-                self.module_dict[cls_module][cls_name]['def_list'] = []
-                self.module_dict[cls_module][cls_name]['def_list'].append(case_dict)
+                self.result_list.append(self.module_over_dict)
+                # self.module_over_dict = {}
+                self.module_over_dict['module'] = cls_module
+                self.module_over_dict['class_list'] = []
 
-        if self.module_dict.get(cls_module):
-            __func()
-        else:
-            self.module_dict[cls_module] = {
-                'case_class': test.__module__,
-                'case_class_doc': test.__doc__,
-            }  # 创建module对象
-            __func()
+                """创建:class 组装:def_list"""
+                self.class_over_dict['class_name'] = cls_name
+                self.class_over_dict['class_doc'] = cls_name
+                self.class_over_dict['def_list'] = []
+                self.class_over_dict['def_list'].append(case_dict)
+
+                """组装:class_list"""
+                self.module_over_dict['class_list'].append(self.class_over_dict)
+
+        __func()
 
     def complete_output(self):
         """断开输出重定向和返回缓冲区,分别独立打印输出"""
@@ -431,6 +419,7 @@ class TestResultExtension(TestResult):
         self.success_count += 1
         super().addSuccess(test)
         output = self.complete_output()
+        output = output.split('\n')
 
         self.assemble_result_obj(test, 0, output)
         if self.verbosity > 1:
@@ -445,6 +434,7 @@ class TestResultExtension(TestResult):
         TestResult.addFailure(self, test, err)
         _, _exc_str = self.failures[-1]
         output = self.complete_output()
+        output = output.split('\n')
 
         self.assemble_result_obj(test, 1, output)
         if self.verbosity > 1:
@@ -459,6 +449,7 @@ class TestResultExtension(TestResult):
         TestResult.addError(self, test, err)
         _, _exc_str = self.errors[-1]
         output = self.complete_output()
+        output = output.split('\n')
 
         self.assemble_result_obj(test, 2, output)
         if self.verbosity > 1:
@@ -543,8 +534,8 @@ class JsonTestRunner:
         failure_count = result.failure_count
         error_count = result.error_count
         all_count = success_count + failure_count + error_count
-        # result_list = result.result_list
-        result_list = result.module_dict
+        result_list = result.result_list
+        # result_list = result.module_dict
         pass_rate = str("%.2f%%" % (float(success_count) / float(all_count) * 100))
 
         test_result = {
@@ -568,17 +559,6 @@ class JsonTestRunner:
     def __generate_html_report(self, report_path=None):
         """生成 HTML 报告"""
         print(self.__generate_html_report.__doc__)
-        # if report_name:
-        #     report_name = 'create_{}_'.format(time.strftime('%Y-%m-%d_%H:%M:%S')) + report_name
-        # else:
-        #     report_name = 'Test_Report_{}_.html'.format(time.strftime('%Y-%m-%d_%H:%M:%S'))
-        # print('报告名称:{}'.format(report_name))
-        #
-        # report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
-        # print('目录路径:{}'.format(report_path))
-        #
-        # final_path = '{}/{}'.format(report_path, report_name)
-        # print('绝对路径:{}'.format(final_path))
 
         self.test_result['title'] = self.title
         self.test_result['description'] = self.description
@@ -610,7 +590,7 @@ class JsonTestRunner:
         html_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.html'.format(ts)
         xml_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xml'.format(ts)
         excel_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xlsx'.format(ts)
-        report_path = report_path.split('BasicService')[0] + 'BasicService/reports'
+        report_path = report_path.split('JsonTestRunner')[0] + 'JsonTestRunner/reports'
 
         report_type_dict = {
             "html": {
