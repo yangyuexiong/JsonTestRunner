@@ -10,7 +10,6 @@ import os
 import sys
 import json
 import time
-from xml.sax import saxutils
 from datetime import datetime
 
 import unittest
@@ -51,7 +50,7 @@ class TemplateMixin:
     <div id="app">
       <el-backtop :bottom="10" :visibility-height="10"></el-backtop>
       <div>
-        <h1>基础服务:自动化测试报告 {{title}}</h1>
+        <h1>{{title}}</h1>
         <h3>测试人员 : {{tester}}</h3>
         <p>开始时间 : {{start_time}}</p>
         <p>合计耗时 : {{duration}}</p>
@@ -322,75 +321,29 @@ class TestResultExtension(TestResult):
         self.failure_count = 0
         self.error_count = 0
 
-        self.module_dict = {}
         self.module_over_dict = {}
         self.class_over_dict = {}
         self.result_list = []
 
     def assemble_result_obj(self, test, result_code, output):
-        """
-        {
-                "module": "文件名称1",
-                "class_list": [
-                    {
-                        "class_name": "类名称",
-                        "class_doc": "类doc",
-                        "def_list": [
-                            {
-                                "result_code": "",
-                                'case_method_name': "",
-                                'case_method_doc': "",
-                                'output':[]
-                            }
-                        ]
-                    }
-                ]
-        }
-        """
-        cls_module = test.__module__
-        cls_name = test.__class__.__name__
+
+        module = test.__module__
+        class_name = test.__class__.__name__
+        class_doc = test.__class__.__doc__
         case_method_name = test._testMethodName
         case_method_doc = test._testMethodDoc
-        case_dict = {
+
+        result_obj = {
+            'module': module,
+            'class_name': class_name,
+            'class_doc': class_doc,
             'result_code': result_code,
             'case_method_name': case_method_name,
             'case_method_doc': case_method_doc,
             'output': output
         }
 
-        def __func():
-            """组装"""
-            if self.module_over_dict.get('module') == cls_module:
-                if self.class_over_dict.get('class_name') == cls_name:
-                    self.class_over_dict['def_list'].append(case_dict)
-                else:
-                    self.class_over_dict = {}  # 清空
-
-                    """创建:class 组装:def_list"""
-                    self.class_over_dict['class_name'] = cls_name
-                    self.class_over_dict['class_doc'] = cls_name
-                    self.class_over_dict['def_list'] = []
-                    self.class_over_dict['def_list'].append(case_dict)
-
-                    """组装:class_list"""
-                    self.module_over_dict['class_list'].append(self.class_over_dict)
-
-            else:
-                self.result_list.append(self.module_over_dict)
-                # self.module_over_dict = {}
-                self.module_over_dict['module'] = cls_module
-                self.module_over_dict['class_list'] = []
-
-                """创建:class 组装:def_list"""
-                self.class_over_dict['class_name'] = cls_name
-                self.class_over_dict['class_doc'] = cls_name
-                self.class_over_dict['def_list'] = []
-                self.class_over_dict['def_list'].append(case_dict)
-
-                """组装:class_list"""
-                self.module_over_dict['class_list'].append(self.class_over_dict)
-
-        __func()
+        self.result_list.append(result_obj)
 
     def complete_output(self):
         """断开输出重定向和返回缓冲区,分别独立打印输出"""
@@ -534,8 +487,8 @@ class JsonTestRunner:
         failure_count = result.failure_count
         error_count = result.error_count
         all_count = success_count + failure_count + error_count
-        result_list = result.result_list
-        # result_list = result.module_dict
+        # result_list = result.result_list
+        result_list = self.zip_test_result(result.result_list)
         pass_rate = str("%.2f%%" % (float(success_count) / float(all_count) * 100))
 
         test_result = {
@@ -624,6 +577,80 @@ class JsonTestRunner:
         generate_report_func = rt.get('func')
         generate_report_func(report_path=final_path)
 
+    @staticmethod
+    def zip_test_result(rl):
+        current_module = {}
+        new_list = []
+        rl.append({})
+
+        for index, i in enumerate(rl, 1):
+
+            if index == 1:
+                current_module['module'] = i.get('module')
+                current_module['class_list'] = []
+                class_obj = {
+                    "class_name": i.get('class_name'),
+                    "class_doc": i.get('class_doc'),
+                    "def_list": []
+                }
+                try:
+                    del i['class_name']
+                    del i['class_doc']
+                    del i['module']
+                except BaseException as e:
+                    pass
+                class_obj['def_list'].append(i)
+                current_module['class_list'].append(class_obj)
+
+            else:
+                if current_module.get('module') == i.get('module'):
+                    class_name = current_module.get('class_list')[-1].get('class_name')
+                    def_list = current_module.get('class_list')[-1].get('def_list')
+                    if class_name == i.get('class_name'):
+                        try:
+                            del i['class_name']
+                            del i['class_doc']
+                            del i['module']
+                        except BaseException as e:
+                            pass
+                        def_list.append(i)
+                    else:
+                        class_obj = {
+                            "class_name": i.get('class_name'),
+                            "class_doc": i.get('class_doc'),
+                            "def_list": []
+                        }
+                        try:
+                            del i['class_name']
+                            del i['class_doc']
+                            del i['module']
+                        except BaseException as e:
+                            pass
+                        class_obj['def_list'].append(i)
+                        current_module['class_list'].append(class_obj)
+
+                else:
+                    new_list.append(current_module.copy())
+                    current_module.clear()
+
+                    current_module['module'] = i.get('module')
+                    current_module['class_list'] = []
+                    class_obj = {
+                        "class_name": i.get('class_name'),
+                        "class_doc": i.get('class_doc'),
+                        "def_list": []
+                    }
+                    try:
+                        del i['class_name']
+                        del i['class_doc']
+                        del i['module']
+                    except BaseException as e:
+                        pass
+                    class_obj['def_list'].append(i)
+                    current_module['class_list'].append(class_obj)
+
+        return new_list
+
 
 if __name__ == '__main__':
     # 例子
@@ -639,5 +666,5 @@ if __name__ == '__main__':
     print(json.dumps(result_list, sort_keys=True, indent=4, separators=(', ', ': '), ensure_ascii=False))
 
     jtr.generate_report('html')
-    jtr.generate_report('xml')
-    jtr.generate_report('excel')
+    # jtr.generate_report('xml')
+    # jtr.generate_report('excel')
