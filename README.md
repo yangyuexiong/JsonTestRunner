@@ -42,6 +42,9 @@ jtr = JsonTestRunner(tester='杨跃雄')
 jtr.run(discover)
 
 print(jtr.get_json_report())
+# 生成报告需要在 JsonTestRunner.py 564 行把工程名称修改成你的工程名称,当前默认为 JsonTestRunner 如下
+# report_path = report_path.split('JsonTestRunner')[0] + 'JsonTestRunner/reports'
+
 jtr.generate_report('html')
 # jtr.generate_report('xml')
 # jtr.generate_report('excel')
