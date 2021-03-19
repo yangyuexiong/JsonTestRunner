@@ -248,8 +248,8 @@ class TemplateMixin:
         </script>  
         """.format(
             kwargs.get('result_list'),
-            kwargs.get('result_list'),
-            kwargs.get('result_list'),
+            kwargs.get('result_success_list'),
+            kwargs.get('result_fail_list'),
             "new Vue({",
             """el: "#app",""",
             """data: function () {""",
@@ -264,7 +264,7 @@ class TemplateMixin:
     def generate_html_report(self):
         """生成html报告"""
         tr = self.test_result
-        print(tr)
+        # print(tr)
         title = tr.get('title')
         description = tr.get('description')
         tester = tr.get('tester')
@@ -321,11 +321,11 @@ class TestResultExtension(TestResult):
         self.failure_count = 0
         self.error_count = 0
 
-        self.module_over_dict = {}
-        self.class_over_dict = {}
-        self.result_list = []
+        self.result_all_list = []
+        self.result_success_list = []
+        self.result_fail_list = []
 
-    def assemble_result_obj(self, test, result_code, output):
+    def assemble_result_obj(self, test, result_code, output, _traceback=None):
 
         module = test.__module__
         class_name = test.__class__.__name__
@@ -333,6 +333,10 @@ class TestResultExtension(TestResult):
         case_method_name = test._testMethodName
         case_method_doc = test._testMethodDoc
 
+        if isinstance(output, list):
+            output.append(_traceback)
+        else:
+            pass
         result_obj = {
             'module': module,
             'class_name': class_name,
@@ -342,8 +346,12 @@ class TestResultExtension(TestResult):
             'case_method_doc': case_method_doc,
             'output': output
         }
+        if result_code == 0:
+            self.result_success_list.append(result_obj.copy())
+        else:
+            self.result_fail_list.append(result_obj.copy())
 
-        self.result_list.append(result_obj)
+        self.result_all_list.append(result_obj.copy())
 
     def complete_output(self):
         """断开输出重定向和返回缓冲区,分别独立打印输出"""
@@ -374,7 +382,7 @@ class TestResultExtension(TestResult):
         output = self.complete_output()
         output = output.split('\n')
 
-        self.assemble_result_obj(test, 0, output)
+        self.assemble_result_obj(test, 0, output, '')
         if self.verbosity > 1:
             sys.stderr.write('ok ')
             sys.stderr.write(str(test))
@@ -389,7 +397,7 @@ class TestResultExtension(TestResult):
         output = self.complete_output()
         output = output.split('\n')
 
-        self.assemble_result_obj(test, 1, output)
+        self.assemble_result_obj(test, 1, output, _exc_str)
         if self.verbosity > 1:
             sys.stderr.write('F  ')
             sys.stderr.write(str(test))
@@ -404,7 +412,7 @@ class TestResultExtension(TestResult):
         output = self.complete_output()
         output = output.split('\n')
 
-        self.assemble_result_obj(test, 2, output)
+        self.assemble_result_obj(test, 2, output, _exc_str)
         if self.verbosity > 1:
             sys.stderr.write('E  ')
             sys.stderr.write(str(test))
@@ -487,9 +495,14 @@ class JsonTestRunner:
         failure_count = result.failure_count
         error_count = result.error_count
         all_count = success_count + failure_count + error_count
-        # result_list = result.result_list
-        result_list = self.zip_test_result(result.result_list)
         pass_rate = str("%.2f%%" % (float(success_count) / float(all_count) * 100))
+
+        rl = result.result_all_list
+        sl = result.result_success_list
+        fl = result.result_fail_list
+        all_list = self.__zip_test_result(rl)
+        success_list = self.__zip_test_result(sl)
+        fail_list = self.__zip_test_result(fl)
 
         test_result = {
             "start_time": str(self.start_time)[:19],
@@ -500,7 +513,9 @@ class JsonTestRunner:
             "failure_count": failure_count,
             "error_count": error_count,
             "pass_rate": pass_rate,
-            "result_list": result_list
+            "result_list": all_list,
+            "result_success_list": success_list,
+            "result_fail_list": fail_list,
         }
         self.test_result = test_result
 
@@ -578,7 +593,7 @@ class JsonTestRunner:
         generate_report_func(report_path=final_path)
 
     @staticmethod
-    def zip_test_result(rl):
+    def __zip_test_result(rl):
         current_module = {}
         new_list = []
         rl.append({})
