@@ -82,13 +82,23 @@ class TemplateMixin:
                             </el-card>
                           </template>
                         </el-table-column>
+                         <!-- 中文 -->
                         <el-table-column
                           prop="case_method_name"
-                        ></el-table-column>
+                        >
+                          <template slot-scope="{row}">
+                          {{row.case_method_name}} ({{row.case_method_doc}})
+                        </template>
+                      </el-table-column>
                       </el-table>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="class_name"></el-table-column>
+                  <!-- 中文 -->
+                  <el-table-column prop="class_name">
+                    <template slot-scope="{row}">
+                      {{row.class_name}} ({{row.class_doc}})
+                    </template>
+                  </el-table-column>
                 </el-table>
               </template>
             </el-table-column>
@@ -111,18 +121,28 @@ class TemplateMixin:
                       <el-table border :data="row.def_list" show-header="false">
                         <el-table-column type="expand">
                           <template slot-scope="{row}">
-                            <el-card shadow="always" class="card"></el-card>
+                            <el-card shadow="always" class="card">
                               <p v-for="i in row.output">{{i}}</p>
                             </el-card>
                           </template>
                         </el-table-column>
+                         <!-- 中文 -->
                         <el-table-column
                           prop="case_method_name"
-                        ></el-table-column>
+                        >
+                          <template slot-scope="{row}">
+                          {{row.case_method_name}} ({{row.case_method_doc}})
+                        </template>
+                      </el-table-column>
                       </el-table>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="class_name"></el-table-column>
+                  <!-- 中文 -->
+                  <el-table-column prop="class_name">
+                    <template slot-scope="{row}">
+                      {{row.class_name}} ({{row.class_doc}})
+                    </template>
+                  </el-table-column>
                 </el-table>
               </template>
             </el-table-column>
@@ -149,13 +169,23 @@ class TemplateMixin:
                             </el-card>
                           </template>
                         </el-table-column>
+                         <!-- 中文 -->
                         <el-table-column
                           prop="case_method_name"
-                        ></el-table-column>
+                        >
+                          <template slot-scope="{row}">
+                          {{row.case_method_name}} ({{row.case_method_doc}})
+                        </template>
+                      </el-table-column>
                       </el-table>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="class_name"></el-table-column>
+                   <!-- 中文 -->
+                  <el-table-column prop="class_name">
+                    <template slot-scope="{row}">
+                      {{row.class_name}} ({{row.class_doc}})
+                    </template>
+                  </el-table-column>
                 </el-table>
               </template>
             </el-table-column>
@@ -329,9 +359,9 @@ class TestResultExtension(TestResult):
 
         module = test.__module__
         class_name = test.__class__.__name__
-        class_doc = test.__class__.__doc__
+        class_doc = test.__class__.__doc__ if test.__class__.__doc__ else ''
         case_method_name = test._testMethodName
-        case_method_doc = test._testMethodDoc
+        case_method_doc = test._testMethodDoc if test._testMethodDoc else ''
 
         if isinstance(output, list):
             output.append(_traceback)
@@ -599,7 +629,7 @@ class JsonTestRunner:
         rl.append({})
 
         for index, i in enumerate(rl, 1):
-
+            current_module['id'] = index
             if index == 1:
                 current_module['module'] = i.get('module')
                 current_module['class_list'] = []
