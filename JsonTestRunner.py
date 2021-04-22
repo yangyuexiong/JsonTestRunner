@@ -522,7 +522,7 @@ class JsonTestRunner:
         self.stop_time = datetime.now()
         self.duration = str(self.stop_time - self.start_time)
         success_count = result.success_count
-        failure_count = result.failure_count
+        failure_count = result.failure_count + result.error_count
         error_count = result.error_count
         all_count = success_count + failure_count + error_count
         pass_rate = str("%.2f%%" % (float(success_count) / float(all_count) * 100))
@@ -541,7 +541,7 @@ class JsonTestRunner:
             "all_count": all_count,
             "success_count": success_count,
             "failure_count": failure_count,
-            "error_count": error_count,
+            # "error_count": error_count,
             "pass_rate": pass_rate,
             "result_list": all_list,
             "result_success_list": success_list,
@@ -584,7 +584,7 @@ class JsonTestRunner:
         :report_name:报告名称
         """
         report_path = os.getcwd()
-        ts = time.strftime('%Y-%m-%d_%H:%M:%S')
+        ts = time.strftime('%Y-%m-%d_%H_%M_%S')
         html_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.html'.format(ts)
         xml_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xml'.format(ts)
         excel_report_name = 'create_{}_'.format(ts) + report_name if report_name else 'Test_Report_{}_.xlsx'.format(ts)
